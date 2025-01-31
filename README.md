@@ -1,49 +1,60 @@
-# CDP AgentKit Langchain Extension Examples - Chatbot Typescript
+![demovideo](/public/demo.gif)
 
-This example demonstrates an agent setup as a terminal style chatbot with access to the full set of CDP AgentKit actions.
+This is a Wallet AI Chat demo built with [CDP AgentKit](https://github.com/coinbase/agentkit).
 
-## Ask the chatbot to engage in the Web3 ecosystem!
-
-- "Transfer a portion of your ETH to john2879.base.eth"
-- "Deploy an NFT that will go super viral!"
-- "Choose a name for yourself and register a Basename for your wallet"
-- "Deploy an ERC-20 token with total supply 1 billion"
-
-## Requirements
-
-- Node.js 18+
-- [CDP API Key](https://portal.cdp.coinbase.com/access/api)
-- [OpenAI API Key](https://platform.openai.com/docs/quickstart#create-and-export-an-api-key)
-
-### Checking Node Version
-
-Before using the example, ensure that you have the correct version of Node.js installed. The example requires Node.js 18 or higher. You can check your Node version by running:
-
-```bash
-node --version
-npm --version
-```
+## Prerequisites
+- Node.js 18+ installed 
+- Package manager (npm, yarn, pnpm, or bun)
+- CDP API Key 
+- OpenAI API Key
 
 ## Installation
 
+1. Clone the repository
+2. Install dependencies
+
 ```bash
 npm install
+# or
+yarn install
+# or
+pnpm install
+# or
+bun install
 ```
 
-## Run the Chatbot
+3. Set up environment variables by creating a `.env.local` file with the following variables:
+```env
+OPENAI_API_KEY=your_openai_api_key
+CDP_API_KEY_NAME=your_cdp_api_key_name
+NETWORK_ID=base-sepolia
+NEXT_PUBLIC_AGENT_ADDRESS=your_agent_address
+```
 
-### Set ENV Vars
+## Development
 
-- Ensure the following ENV Vars are set:
-  - "CDP_API_KEY_NAME"
-  - "CDP_API_KEY_PRIVATE_KEY"
-  - "OPENAI_API_KEY"
-  - "NETWORK_ID" (Defaults to `base-sepolia`)
+1. Run the development server:
 
 ```bash
-npm start
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## License
+2. Open http://localhost:3000 with your browser to see the result.
 
-Apache-2.0
+## Important Notes
+- Make sure to keep your API keys secure and never commit them to version control
+- Ensure all environment variables are properly set before starting the application
+
+## AgentKit
+
+To learn more about AgentKit, take a look at the following resources:
+
+- [AgentKit Documentation](https://docs.cdp.coinbase.com/agentkit/docs/welcome) 
+
+
