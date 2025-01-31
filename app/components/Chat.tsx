@@ -18,6 +18,7 @@ const PROMPT_TEMPLATES = [
 ];
 
 export default function Chat() {
+  const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'assistant', content: 'Hello, how can I help you today?' }
   ]);
@@ -29,10 +30,17 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [walletAddress, setWalletAddress] = useState('');
   
+  // Handle client-side only mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Initialize wallet address on client side only
   useEffect(() => {
-    setWalletAddress(process.env.NEXT_PUBLIC_AGENT_ADDRESS || '');
-  }, []);
+    if (mounted) {
+      setWalletAddress(process.env.NEXT_PUBLIC_AGENT_ADDRESS || '');
+    }
+  }, [mounted]);
 
   const truncateAddress = (address: string) => {
     if (!address) return '...';
@@ -236,6 +244,19 @@ export default function Chat() {
     }
   }, [isLoading, isPendingDeactivation]);
 
+  if (!mounted) {
+    return (
+      <div className="flex flex-col w-full max-w-sm rounded-2xl overflow-hidden shadow-lg h-[600px]">
+        <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-900">
+          <IoWalletOutline className="w-5 h-5 text-white" />
+          <span className="text-sm font-mono text-white truncate px-2">...</span>
+          <RiRobot2Line className="w-5 h-5 text-green-500" />
+        </div>
+        <div className="flex-1 bg-zinc-900" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col w-full max-w-sm rounded-2xl overflow-hidden shadow-lg h-[600px]">
       {/* Header */}
@@ -288,7 +309,18 @@ export default function Chat() {
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-zinc-800 px-2 py-1.5 rounded-lg rounded-bl-none">
-              <div className="animate-pulse text-sm text-white">Thinking...</div>
+              <motion.div
+                animate={{
+                  opacity: [1, 0.5, 1],
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 2,
+                }}
+                className="text-sm text-white"
+              >
+                Thinking...
+              </motion.div>
             </div>
           </div>
         )}
