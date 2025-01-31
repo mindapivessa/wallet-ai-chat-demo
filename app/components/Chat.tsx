@@ -27,11 +27,15 @@ export default function Chat() {
   const [isPendingDeactivation, setIsPendingDeactivation] = useState(false);
   const isAutonomousRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [walletAddress, setWalletAddress] = useState('');
   
-  // Use environment variable for wallet address
-  const WALLET_ADDRESS = process.env.NEXT_PUBLIC_AGENT_ADDRESS || '';
+  // Initialize wallet address on client side only
+  useEffect(() => {
+    setWalletAddress(process.env.NEXT_PUBLIC_AGENT_ADDRESS || '');
+  }, []);
 
   const truncateAddress = (address: string) => {
+    if (!address) return '...';
     return `${address.slice(0, 5)}...${address.slice(-5)}`;
   };
 
@@ -43,6 +47,36 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const handleApiCall = async (message: string, isAutonomousMode: boolean = false) => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          message,
+          isAutonomous: isAutonomousMode 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Received non-JSON response from server");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API call error:', error);
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,22 +92,16 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: input }),
-      });
-
-      const data = await response.json();
-      
+      const data = await handleApiCall(input);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.response,
       }]);
     } catch (error) {
-      console.error('Error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -91,22 +119,16 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: prompt }),
-      });
-
-      const data = await response.json();
-      
+      const data = await handleApiCall(prompt);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.response,
       }]);
     } catch (error) {
-      console.error('Error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+      }]);
     } finally {
       setInput('');
       setIsLoading(false);
@@ -122,24 +144,14 @@ export default function Chat() {
         content: 'Autonomous mode activated. I will now proactively interact with the blockchain.'
       }]);
       
-      // Set loading state before making the request
       setIsLoading(true);
       
       try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            message: "You're now in autonomous mode. Please start performing interesting blockchain operations.",
-            isAutonomous: true 
-          }),
-        });
-
-        const data = await response.json();
+        const data = await handleApiCall(
+          "You're now in autonomous mode. Please start performing interesting blockchain operations.",
+          true
+        );
         
-        // Add the response to messages
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: data.response,
@@ -147,25 +159,15 @@ export default function Chat() {
 
         // Set up polling for autonomous mode updates
         const pollForUpdates = async () => {
-          // Check ref instead of state to handle closure correctly
           if (!isAutonomousRef.current) return;
           
           setIsLoading(true);
           try {
-            const response = await fetch('/api/chat', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                message: "Continue with the next autonomous action.",
-                isAutonomous: true 
-              }),
-            });
-
-            const data = await response.json();
+            const data = await handleApiCall(
+              "Continue with the next autonomous action.",
+              true
+            );
             
-            // Only add message if still in autonomous mode
             if (isAutonomousRef.current) {
               setMessages(prev => [...prev, {
                 role: 'assistant',
@@ -174,20 +176,29 @@ export default function Chat() {
             }
           } catch (error) {
             console.error('Error in autonomous mode:', error);
+            if (isAutonomousRef.current) {
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: 'Autonomous mode encountered an error. Retrying in 10 seconds...',
+              }]);
+            }
           } finally {
             setIsLoading(false);
-            // Schedule next poll only if still in autonomous mode
             if (isAutonomousRef.current) {
               setTimeout(pollForUpdates, 10000);
             }
           }
         };
 
-        // Start polling
         setTimeout(pollForUpdates, 10000);
 
       } catch (error) {
         console.error('Error:', error);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'Failed to start autonomous mode. Please try again.',
+        }]);
+        setIsAutonomous(false);
       } finally {
         setIsLoading(false);
       }
@@ -231,7 +242,7 @@ export default function Chat() {
       <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-900">
         <IoWalletOutline className="w-5 h-5 text-white" />
         <span className="text-sm font-mono text-white truncate px-2">
-          {truncateAddress(WALLET_ADDRESS)}
+          {truncateAddress(walletAddress)}
         </span>
         <motion.button
           onClick={toggleAutonomousMode}

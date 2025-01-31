@@ -72,6 +72,13 @@ export async function POST(request: Request) {
     
     const { agent, config } = await initializeAgent();
     
+    if (!agent) {
+      return NextResponse.json(
+        { error: 'Failed to initialize agent' }, 
+        { status: 500 }
+      );
+    }
+    
     const stream = await agent.stream({ 
       messages: [new HumanMessage(
         isAutonomous 
@@ -93,36 +100,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // If in autonomous mode, schedule the next action
-    if (isAutonomous) {
-      setTimeout(async () => {
-        try {
-          const nextStream = await agent.stream({
-            messages: [new HumanMessage("Continue with the next autonomous action.")],
-            config: { ...config, isAutonomous }
-          }, config);
-
-          let nextResponse = '';
-          for await (const chunk of nextStream) {
-            if ("agent" in chunk) {
-              nextResponse += chunk.agent.messages[0].content + '\n';
-            } else if ("tools" in chunk) {
-              nextResponse += chunk.tools.messages[0].content + '\n';
-            }
-          }
-          
-          // You might want to implement a WebSocket or Server-Sent Events
-          // to push these updates to the client in a real application
-          console.log('Next autonomous action:', nextResponse);
-        } catch (error) {
-          console.error('Error in autonomous mode:', error);
-        }
-      }, 10000); // Schedule next action after 10 seconds
-    }
-
     return NextResponse.json({ response });
   } catch (error) {
     console.error('Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 } 
