@@ -21,7 +21,7 @@ yarn install
 pnpm install
 # or
 bun install
-```
+``` 
 
 3. Set up environment variables by creating a `.env.local` file with the following variables:
 ```env
